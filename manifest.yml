@@ -1,0 +1,123 @@
+name: concourse
+
+releases:
+  - name: concourse
+    url: https://bosh.io/d/github.com/concourse/concourse?v=2.5.0
+    sha1: 0d1f436aad50bb09ac2c809cd6cb6df3e38a7767
+  - name: garden-runc
+    url: https://bosh.io/d/github.com/cloudfoundry/garden-runc-release?v=1.0.3
+    sha1: 0c04b944d50ec778f5b34304fd4bc8fc0ed83b2b
+  - name: bosh-google-cpi
+    url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-google-cpi-release?v=25.6.1
+    sha1: fc8c7025c3ba3aef66e005a4bdf7fd3d5e997974
+
+resource_pools:
+  - name: vms
+    network: private
+    stemcell:
+      url: https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-trusty-go_agent?v=3312
+      sha1: 0443da0738ea3dd30c771749bd962420b5dfef48
+    cloud_properties:
+      zone: ((zone))
+      machine_type: n1-standard-1
+      root_disk_size_gb: 40
+      root_disk_type: pd-standard
+      tags:
+      - concourse-internal
+      - concourse-public
+
+disk_pools:
+  - name: disks
+    disk_size: 32_768
+    cloud_properties:
+      type: pd-standard
+
+networks:
+  - name: vip
+    type: vip
+  - name: private
+    type: manual
+    subnets:
+    - range: 10.150.0.0/16
+      gateway: 10.150.0.1
+      static: [10.150.0.2-10.150.0.7]
+      cloud_properties:
+        network_name: ((network_name))
+        subnetwork_name: ((subnetwork_name))
+        ephemeral_external_ip: true
+        tags:
+          - internal
+          - no-ip
+
+jobs:
+  - name: web
+    instances: 1
+
+    templates:
+    - name: atc
+      release: concourse
+    - name: postgresql
+      release: concourse
+    - name: tsa
+      release: concourse
+    - name: groundcrew
+      release: concourse
+    - name: baggageclaim
+      release: concourse
+    - name: garden
+      release: garden-runc
+
+    properties:
+      basic_auth_username: admin
+      basic_auth_password: ((password))
+      # bind_port: 80
+      databases:
+      - name: atc
+        role: admin
+        password: ((password))
+      external_url: http://((static_ip))
+      garden:
+        listen_address: 0.0.0.0:7777
+        listen_network: tcp
+        network: 1432
+      publicly_viewable: true
+      postgresql:
+        address: 0.0.0.0
+        database: atc
+        role: &role
+          name: admin
+          password: ((password))
+      tsa:
+        host: 0.0.0.0
+    resource_pool: vms
+    persistent_disk_pool: disks
+
+    networks:
+    - name: vip
+      static_ips:
+      - ((static_ip))
+    - name: private
+      static_ips: [10.150.0.2]
+      default:
+        - dns
+        - gateway
+
+cloud_provider:
+  template:
+    name: google_cpi
+    release: bosh-google-cpi
+
+  ssh_tunnel:
+    host: ((static_ip))
+    port: 22
+    user: ((user))
+    private_key: ((private_key))
+
+  mbus: https://mbus-admin:p-d8fl12d0@((static_ip)):6868
+
+  properties:
+    agent: {mbus: "https://mbus-admin:p-d8fl12d0@0.0.0.0:6868"}
+    blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
+    google: &google_properties
+      project: ((project_id))
+      json_key: ((json_key))
