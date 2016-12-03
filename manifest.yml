@@ -68,6 +68,8 @@ jobs:
       release: garden-runc
 
     properties:
+      baggageclaim:
+        url: http://0.0.0.0:7788
       basic_auth_username: admin
       basic_auth_password: ((password))
       # bind_port: 80
