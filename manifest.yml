@@ -18,6 +18,7 @@ resource_pools:
       url: https://bosh.io/d/stemcells/bosh-google-kvm-ubuntu-trusty-go_agent?v=3312
       sha1: 0443da0738ea3dd30c771749bd962420b5dfef48
     cloud_properties:
+      name: concourse
       zone: ((zone))
       machine_type: n1-standard-1
       root_disk_size_gb: 40
