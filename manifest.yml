@@ -116,10 +116,10 @@ cloud_provider:
     user: ((user))
     private_key: ((private_key))
 
-  mbus: https://mbus-admin:p-d8fl12d0@((static_ip)):6868
+  mbus: https://mbus-admin:((password))@((static_ip)):6868
 
   properties:
-    agent: {mbus: "https://mbus-admin:p-d8fl12d0@0.0.0.0:6868"}
+    agent: {mbus: "https://mbus-admin:((password))@0.0.0.0:6868"}
     blobstore: {provider: local, path: /var/vcap/micro_bosh/data/cache}
     google: &google_properties
       project: ((project_id))
